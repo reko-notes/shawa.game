@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🥙 シャワルマ屋さん</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+    background: linear-gradient(135deg, #f8e8c8, #f5d6a8);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+
+  #header {
+    width: 100%;
+    background: linear-gradient(90deg, #d2691e, #e8892f);
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  #header .title { font-weight: bold; font-size: 22px; }
+  #header .stats span { margin-left: 16px; }
+
+  #game-area {
+    width: 100%;
+    max-width: 500px;
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .panel {
+    background: white;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  }
+
+  #order-panel h3 { color: #d2691e; margin-bottom: 6px; font-size: 15px; }
+  #order-display {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    min-height: 36px; align-items: center; transition: opacity 0.4s;
+  }
+  #order-display.fading { opacity: 0; }
+  .order-item {
+    background: #fff3e0; border: 2px solid #ffcc80;
+    border-radius: 20px; padding: 3px 10px; font-size: 14px;
+  }
+  .order-item.special {
+    background: #fce4ec; border-color: #f48fb1;
+    color: #c2185b; font-weight: bold;
+  }
+
+  #order-timer-bar {
+    width: 100%; height: 4px; background: #f5f5f5;
+    border-radius: 2px; overflow: hidden; margin-top: 6px;
+  }
+  #order-timer-fill {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #d2691e, #ffca28);
+  }
+
+  #order-hidden-msg {
+    display: none; text-align: center; color: #bbb;
+    font-size: 13px; padding: 6px 0; font-style: italic;
+  }
+
+  #special-label {
+    text-align: center; font-size: 14px; font-weight: bold;
+    color: #c2185b; min-height: 20px;
+  }
+
+  #build-panel h3 { color: #388e3c; margin-bottom: 6px; font-size: 15px; }
+  #build-display {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    min-height: 44px; align-items: center;
+    border: 2px dashed #c8e6c9; border-radius: 12px;
+    padding: 8px; transition: background 0.3s;
+  }
+  #build-display.correct { background: #e8f5e9; }
+  #build-display.wrong { background: #ffebee; }
+  .build-item {
+    background: #e8f5e9; border: 2px solid #81c784;
+    border-radius: 20px; padding: 3px 10px; font-size: 14px;
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn { 0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1} }
+
+  #ingredients-panel { text-align: center; }
+  #ingredients-panel h3 { color: #1565c0; margin-bottom: 8px; font-size: 15px; }
+  #ingredients-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  }
+  .ingredient-btn {
+    background: linear-gradient(180deg, #fffde7, #fff9c4);
+    border: 2px solid #fdd835; border-radius: 12px;
+    padding: 10px 4px; font-size: 13px; cursor: pointer;
+    transition: all 0.15s; display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+  }
+  .ingredient-btn:hover { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .ingredient-btn:active { transform: scale(0.95); }
+  .ingredient-btn .emoji { font-size: 24px; }
+
+  @keyframes shufflePop {
+    0%{transform:scale(0.7) rotate(-5deg);opacity:0.5}
+    60%{transform:scale(1.08) rotate(1deg)}
+    100%{transform:scale(1) rotate(0deg);opacity:1}
+  }
+  .shuffle-pop { animation: shufflePop 0.35s ease; }
+
+  #actions { display: flex; gap: 8px; }
+  #actions button {
+    flex: 1; padding: 13px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.15s;
+  }
+  #actions button:active { transform: scale(0.96); }
+  #serve-btn { background: linear-gradient(180deg, #66bb6a, #43a047); color: white; }
+  #clear-btn { background: linear-gradient(180deg, #ef5350, #d32f2f); color: white; }
+
+  #timer-bar { width:100%;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden; }
+  #timer-fill { height:100%;background:linear-gradient(90deg,#ff7043,#ffca28);transition:width 1s linear;width:100%; }
+
+  #customer-section { display:flex;flex-direction:column;align-items:center;gap:4px; }
+  #customer { text-align:center;font-size:48px;line-height:1; }
+  #patience-bar { width:120px;height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden; }
+  #patience-fill { height:100%;width:100%;background:linear-gradient(90deg,#66bb6a,#a5d6a7);transition:width 0.5s linear,background 0.5s; }
+  #patience-label { font-size:11px;color:#888; }
+
+  @keyframes bigPop { 0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)} }
+  .big-pop { animation: bigPop 0.4s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)} }
+  .shake { animation: shake 0.3s ease; }
+
+  #message { text-align:center;font-size:18px;font-weight:bold;min-height:28px;color:#d2691e; }
+  @keyframes fadeIn { 0%{opacity:0;transform:translateY(-8px)}100%{opacity:1;transform:translateY(0)} }
+  #combo { font-size:13px;color:#e65100;text-align:center;min-height:16px; }
+
+  #start-screen, #result-screen {
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.75);
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    color:white;gap:10px;z-index:10;
+    overflow-y:auto;padding:20px 0;
+  }
+  #start-screen h1, #result-screen h1 { font-size:32px; }
+  #start-screen p, #result-screen p { font-size:15px;text-align:center;padding:0 24px;line-height:1.7; }
+  .big-btn {
+    background:linear-gradient(180deg,#ffca28,#f9a825);
+    color:#5d4037;border:none;border-radius:16px;
+    padding:14px 44px;font-size:20px;font-weight:bold;cursor:pointer;margin-top:6px;
+  }
+  .big-btn:hover { transform:scale(1.05); }
+  .hidden { display:none !important; }
+
+  #settings-panel {
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:16px;padding:16px 20px;width:90%;max-width:380px;
+  }
+  #settings-panel h3 { font-size:16px;margin-bottom:12px;text-align:center;color:#ffca28; }
+  .setting-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px; }
+  .setting-row label { font-size:13px;flex-shrink:0;min-width:130px; }
+  .setting-row .setting-right { display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end; }
+  .setting-row input[type="range"] { width:100px;accent-color:#ffca28; }
+  .setting-row .setting-val { font-size:14px;font-weight:bold;color:#ffca28;min-width:44px;text-align:right; }
+  .setting-desc { font-size:11px;color:#aaa;margin-top:-8px;margin-bottom:10px;padding-left:4px; }
+
+  #result-chef-area { display:flex;flex-direction:column;align-items:center;gap:6px; }
+  #result-chef-area img { filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3)); }
+  #result-rank-label { font-size:20px;font-weight:bold;text-align:center; }
+  #result-stats { text-align:center;font-size:15px;line-height:1.8; }
+
+  #share-area { margin-top:4px; }
+  #share-btn {
+    background:#1d9bf0;color:white;border:none;border-radius:12px;
+    padding:11px 26px;font-size:15px;font-weight:bold;cursor:pointer;transition:all 0.15s;
+  }
+  #share-btn:hover { background:#1a8cd8;transform:scale(1.04); }
+
+  #escape-notify, #shuffle-notify {
+    position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%) scale(0);
+    padding:14px 24px;border-radius:16px;font-size:18px;font-weight:bold;
+    z-index:8;pointer-events:none;transition:transform 0.3s ease;
+  }
+  #escape-notify { background:rgba(0,0,0,0.8);color:#ff8a80; }
+  #shuffle-notify { background:rgba(21,101,192,0.9);color:white; }
+  #escape-notify.show, #shuffle-notify.show { transform:translate(-50%,-50%) scale(1); }
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <div style="font-size:64px;">🥙</div>
+  <h1>シャワルマ屋さん</h1>
+  <p>注文通りにシャワルマを作ろう！<br>
+  🧂 材料が合っていれば順番は自由！<br>
+  ⏱️ 注文は数秒で消えるよ！覚えて作ろう！<br>
+  🔀 材料の並びが時々シャッフル！<br>
+  ⚠️ 待たせすぎるとお客さんが帰る！<br>
+  🌟 変わったお客さんが来たらチャンス！</p>
+
+  <div id="settings-panel">
+    <h3>⚙️ 設定</h3>
+    <div class="setting-row">
+      <label>⏱️ 制限時間</label>
+      <div class="setting-right">
+        <input type="range" id="cfg-time" min="30" max="180" step="10" value="90" oninput="document.getElementById('val-time').textContent=this.value+'秒'">
+        <span class="setting-val" id="val-time">90秒</span>
+      </div>
+    </div>
+    <div class="setting-desc">短いほどハード。180秒でまったり、30秒で地獄。</div>
+    <div class="setting-row">
+      <label>📋 注文の表示時間</label>
+      <div class="setting-right">
+        <input type="range" id="cfg-order-show" min="8" max="20" step="1" value="12" oninput="document.getElementById('val-order-show').textContent=this.value+'秒'">
+        <span class="setting-val" id="val-order-show">12秒</span>
+      </div>
+    </div>
+    <div class="setting-desc">注文が最初に見れる秒数。短いほど記憶力勝負。</div>
+    <div class="setting-row">
+      <label>🧠 最短表示時間</label>
+      <div class="setting-right">
+        <input type="range" id="cfg-order-min" min="5" max="10" step="0.5" value="6" oninput="document.getElementById('val-order-min').textContent=this.value+'秒'">
+        <span class="setting-val" id="val-order-min">6秒</span>
+      </div>
+    </div>
+    <div class="setting-desc">後半でもこれ以下には縮まない下限。</div>
+    <div class="setting-row">
+      <label>🔀 シャッフル頻度</label>
+      <div class="setting-right">
+        <input type="range" id="cfg-shuffle" min="2" max="10" step="1" value="4" oninput="document.getElementById('val-shuffle').textContent=this.value+'人毎'">
+        <span class="setting-val" id="val-shuffle">4人毎</span>
+      </div>
+    </div>
+    <div class="setting-desc">何人ごとにボタン配置が変わるか。2で超混乱。</div>
+    <div class="setting-row">
+      <label>😤 客の忍耐力</label>
+      <div class="setting-right">
+        <input type="range" id="cfg-patience" min="5" max="30" step="1" value="15" oninput="document.getElementById('val-patience').textContent=this.value+'秒'">
+        <span class="setting-val" id="val-patience">15秒</span>
+      </div>
+    </div>
+    <div class="setting-desc">客が待ってくれる秒数。5秒だとほぼ即キレ。</div>
+    <div class="setting-row">
+      <label>🌟 特殊客の出現率</label>
+      <div class="setting-right">
+        <input type="range" id="cfg-special" min="0" max="50" step="5" value="15" oninput="document.getElementById('val-special').textContent=this.value+'%'">
+        <span class="setting-val" id="val-special">15%</span>
+      </div>
+    </div>
+    <div class="setting-desc">0%でオフ。50%で半分が特殊客。</div>
+  </div>
+  <button class="big-btn" onclick="startGame()">🔥 はじめる</button>
+</div>
+
+<div id="result-screen" class="hidden">
+  <div id="result-chef-area"></div>
+  <h1 id="result-title">おつかれさま！</h1>
+  <p id="result-stats"></p>
+  <div id="share-area">
+    <button id="share-btn" onclick="shareResult()">𝕏 結果をポストする</button>
+  </div>
+  <button class="big-btn" onclick="startGame()">🔄 もう一回</button>
+</div>
+
+<div id="escape-notify">💨 客が帰った…</div>
+<div id="shuffle-notify">🔀 材料シャッフル！</div>
+
+<div id="header">
+  <div class="title">🥙 シャワルマ屋さん</div>
+  <div class="stats">
+    <span>💰 <span id="score">0</span></span>
+    <span>👤 <span id="served">0</span></span>
+  </div>
+</div>
+
+<div id="game-area">
+  <div id="timer-bar"><div id="timer-fill"></div></div>
+  <div id="customer-section">
+    <div id="customer">😊</div>
+    <div id="patience-bar"><div id="patience-fill"></div></div>
+    <div id="patience-label">お客さんの機嫌</div>
+  </div>
+  <div id="special-label">&nbsp;</div>
+  <div class="panel" id="order-panel">
+    <h3>📋 注文（順番自由🆓）</h3>
+    <div id="order-display"></div>
+    <div id="order-timer-bar"><div id="order-timer-fill"></div></div>
+    <div id="order-hidden-msg">🧠 注文を思い出して作ろう！</div>
+  </div>
+  <div class="panel" id="build-panel">
+    <h3>🔨 調理中</h3>
+    <div id="build-display"></div>
+  </div>
+  <div id="message">&nbsp;</div>
+  <div id="combo"></div>
+  <div class="panel" id="ingredients-panel">
+    <h3>🧂 材料を選んでね</h3>
+    <div id="ingredients-grid"></div>
+  </div>
+  <div id="actions">
+    <button id="clear-btn" onclick="clearBuild()">✖ やり直し</button>
+    <button id="serve-btn" onclick="serve()">🥙 提供！</button>
+  </div>
+</div>
+
+<script>
+// ===== AUDIO =====
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+let audioCtx=null;
+function ensureAudio(){if(!audioCtx)audioCtx=new AudioCtx();if(audioCtx.state==='suspended')audioCtx.resume();}
+function playTone(f,d,t='sine',v=0.1){ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=t;o.frequency.setValueAtTime(f,audioCtx.currentTime);g.gain.setValueAtTime(v,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d);}
+function sfxAdd(){playTone(600,0.08,'sine',0.08);setTimeout(()=>playTone(800,0.06,'sine',0.06),40);}
+function sfxCorrect(){playTone(523,0.12,'sine',0.1);setTimeout(()=>playTone(659,0.12,'sine',0.1),80);setTimeout(()=>playTone(784,0.18,'sine',0.1),160);}
+function sfxWrong(){playTone(300,0.15,'square',0.06);setTimeout(()=>playTone(250,0.2,'square',0.06),120);}
+function sfxEscape(){playTone(400,0.12,'triangle',0.08);setTimeout(()=>playTone(320,0.12,'triangle',0.08),100);setTimeout(()=>playTone(260,0.25,'triangle',0.08),200);}
+function sfxCombo(){playTone(784,0.1,'sine',0.08);setTimeout(()=>playTone(988,0.1,'sine',0.08),60);setTimeout(()=>playTone(1175,0.15,'sine',0.1),120);}
+function sfxSpecial(){playTone(880,0.08,'sine',0.07);setTimeout(()=>playTone(1100,0.08,'sine',0.07),70);setTimeout(()=>playTone(880,0.08,'sine',0.07),140);setTimeout(()=>playTone(1100,0.15,'sine',0.09),210);}
+function sfxTimeWarn(){playTone(440,0.06,'square',0.04);}
+function sfxGameOver(){playTone(520,0.2,'sine',0.1);setTimeout(()=>playTone(490,0.2,'sine',0.1),180);setTimeout(()=>playTone(460,0.2,'sine',0.1),360);setTimeout(()=>playTone(390,0.5,'sine',0.1),540);}
+function sfxClear(){playTone(350,0.08,'triangle',0.06);}
+function sfxShuffle(){playTone(500,0.06,'triangle',0.07);setTimeout(()=>playTone(620,0.06,'triangle',0.07),50);setTimeout(()=>playTone(740,0.08,'triangle',0.08),100);}
+function sfxOrderHide(){playTone(800,0.1,'sine',0.05);setTimeout(()=>playTone(600,0.15,'sine',0.04),80);}
+
+// ===== シェフ画像 =====
+// images/chef-0.png 〜 chef-4.png を参照
+function showChefImage(rank){
+  return '<img src="images/chef-' + rank + '.png" width="160" alt="シェフ" style="height:auto;border-radius:12px;">';
+}
+
+// ===== DATA =====
+const INGREDIENTS=[
+  {id:'pita',emoji:'🫓',name:'ピタ'},{id:'chicken',emoji:'🍗',name:'チキン'},
+  {id:'beef',emoji:'🥩',name:'ビーフ'},{id:'lettuce',emoji:'🥬',name:'レタス'},
+  {id:'tomato',emoji:'🍅',name:'トマト'},{id:'onion',emoji:'🧅',name:'オニオン'},
+  {id:'cheese',emoji:'🧀',name:'チーズ'},{id:'sauce',emoji:'🫙',name:'ソース'},
+  {id:'pickle',emoji:'🥒',name:'ピクルス'},
+];
+const SPECIAL_INGREDIENTS=[
+  {id:'falafel',emoji:'🧆',name:'ファラフェル'},{id:'hummus',emoji:'🫘',name:'フムス'},
+  {id:'egg',emoji:'🍳',name:'目玉焼き'},{id:'fries',emoji:'🍟',name:'ポテト'},
+  {id:'spicy',emoji:'🌶️',name:'激辛ソース'},
+];
+const CUSTOMERS=['😊','😄','🤤','😋','🧑‍💼','👩‍🦰','👨‍🍳','👵','🧑‍🎤','👨‍💻','👩‍🏫','🤠'];
+const SPECIAL_CUSTOMERS=[
+  {emoji:'🤴',desc:'👑 ロイヤルシャワルマ！'},{emoji:'👽',desc:'🛸 ミステリアスな注文…'},
+  {emoji:'🎅',desc:'🎄 クリスマス特別注文！'},{emoji:'🥷',desc:'💨 超高速注文！'},
+  {emoji:'🧙',desc:'✨ 魔法のシャワルマ！'},
+];
+
+let CFG={};
+function readConfig(){
+  CFG={
+    gameTime:parseInt(document.getElementById('cfg-time').value),
+    orderShowBase:parseFloat(document.getElementById('cfg-order-show').value),
+    orderShowMin:parseFloat(document.getElementById('cfg-order-min').value),
+    shuffleEvery:parseInt(document.getElementById('cfg-shuffle').value),
+    basePat:parseInt(document.getElementById('cfg-patience').value),
+    specialPct:parseInt(document.getElementById('cfg-special').value)/100,
+  };
+}
+
+let order=[],build=[],score=0,served=0,combo=0,maxCombo=0;
+let missCount=0,escapeCount=0,specialServed=0;
+let timeLeft=0,timer=null;
+let patienceLeft=0,patienceMax=0,patienceTimer=null;
+let isSpecial=false,currentIngredients=[...INGREDIENTS];
+let orderVisible=true,orderHideTimer=null,orderTimerAnim=null;
+let totalCustomers=0,buttonLayout=[...INGREDIENTS];
+
+function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function countIds(items){const m={};items.forEach(i=>{m[i.id]=(m[i.id]||0)+1;});return m;}
+function matchUnordered(a,b){const ca=countIds(a),cb=countIds(b);const ka=Object.keys(ca),kb=Object.keys(cb);if(ka.length!==kb.length)return false;return ka.every(k=>ca[k]===cb[k]);}
+
+function renderButtons(anim=false){const g=document.getElementById('ingredients-grid');g.innerHTML='';buttonLayout.forEach(ing=>{const b=document.createElement('button');b.className='ingredient-btn'+(anim?' shuffle-pop':'');b.innerHTML=`<span class="emoji">${ing.emoji}</span><span>${ing.name}</span>`;b.onclick=()=>addIngredient(ing);g.appendChild(b);});}
+function initIngredientButtons(){buttonLayout=[...currentIngredients];renderButtons();}
+function doShuffle(){buttonLayout=shuffleArray(currentIngredients);renderButtons(true);sfxShuffle();const n=document.getElementById('shuffle-notify');n.classList.add('show');setTimeout(()=>n.classList.remove('show'),900);}
+
+function getOrderShowTime(){return Math.max(CFG.orderShowMin,CFG.orderShowBase-served*0.5);}
+function showOrderThenHide(){
+  orderVisible=true;const oEl=document.getElementById('order-display'),hMsg=document.getElementById('order-hidden-msg');
+  const tFill=document.getElementById('order-timer-fill'),tBar=document.getElementById('order-timer-bar');
+  oEl.style.display='flex';oEl.classList.remove('fading');hMsg.style.display='none';tBar.style.display='block';tFill.style.width='100%';
+  if(orderHideTimer)clearTimeout(orderHideTimer);if(orderTimerAnim)cancelAnimationFrame(orderTimerAnim);
+  const showTime=getOrderShowTime(),st=performance.now();
+  function anim(now){const e=(now-st)/1000,p=Math.max(0,1-e/showTime)*100;tFill.style.width=p+'%';tFill.style.background=p>50?'linear-gradient(90deg,#d2691e,#ffca28)':p>25?'linear-gradient(90deg,#ff9800,#ffcc80)':'linear-gradient(90deg,#f44336,#ff8a80)';if(e<showTime)orderTimerAnim=requestAnimationFrame(anim);}
+  orderTimerAnim=requestAnimationFrame(anim);
+  orderHideTimer=setTimeout(()=>{oEl.classList.add('fading');sfxOrderHide();setTimeout(()=>{oEl.style.display='none';hMsg.style.display='block';tBar.style.display='none';orderVisible=false;},400);},showTime*1000);
+}
+function revealOrder(){
+  orderVisible=true;const oEl=document.getElementById('order-display'),hMsg=document.getElementById('order-hidden-msg');
+  const tBar=document.getElementById('order-timer-bar'),tFill=document.getElementById('order-timer-fill');
+  oEl.style.display='flex';oEl.classList.remove('fading');hMsg.style.display='none';
+  if(orderHideTimer)clearTimeout(orderHideTimer);if(orderTimerAnim)cancelAnimationFrame(orderTimerAnim);
+  const rt=2.0,st=performance.now();tBar.style.display='block';tFill.style.width='100%';tFill.style.background='linear-gradient(90deg,#f44336,#ff8a80)';
+  function anim(now){const e=(now-st)/1000,p=Math.max(0,1-e/rt)*100;tFill.style.width=p+'%';if(e<rt)orderTimerAnim=requestAnimationFrame(anim);}
+  orderTimerAnim=requestAnimationFrame(anim);
+  orderHideTimer=setTimeout(()=>{oEl.classList.add('fading');setTimeout(()=>{oEl.style.display='none';hMsg.style.display='block';tBar.style.display='none';orderVisible=false;},400);},rt*1000);
+}
+
+function generateOrder(){totalCustomers++;isSpecial=served>0&&Math.random()<CFG.specialPct;isSpecial?generateSpecialOrder():generateNormalOrder();}
+function generateNormalOrder(){
+  document.getElementById('special-label').innerHTML='&nbsp;';currentIngredients=[...INGREDIENTS];
+  const layoutIds=buttonLayout.map(b=>b.id);const hadSpecial=SPECIAL_INGREDIENTS.some(s=>layoutIds.includes(s.id));
+  if((totalCustomers>0&&totalCustomers%CFG.shuffleEvery===0)||hadSpecial)doShuffle();
+  const base=Math.min(2+Math.floor(served/3),5),count=base+Math.floor(Math.random()*2);
+  let items=[INGREDIENTS[0]];items.push(Math.random()<0.5?INGREDIENTS[1]:INGREDIENTS[2]);
+  const sh=[...INGREDIENTS.slice(3)].sort(()=>Math.random()-0.5);for(let i=0;i<count-2&&i<sh.length;i++)items.push(sh[i]);
+  order=items;patienceMax=Math.max(7,CFG.basePat-Math.floor(served/4));patienceLeft=patienceMax;
+  displayOrder();displayCustomer();startPatience();showOrderThenHide();
+}
+function generateSpecialOrder(){
+  const sc=SPECIAL_CUSTOMERS[Math.floor(Math.random()*SPECIAL_CUSTOMERS.length)];sfxSpecial();
+  document.getElementById('special-label').innerHTML=`<span>${sc.desc}</span>`;
+  const specials=[...SPECIAL_INGREDIENTS].sort(()=>Math.random()-0.5).slice(0,2);currentIngredients=[...INGREDIENTS,...specials];doShuffle();
+  let items=[INGREDIENTS[0]];items.push(Math.random()<0.5?INGREDIENTS[1]:INGREDIENTS[2]);
+  const sh=[...INGREDIENTS.slice(3)].sort(()=>Math.random()-0.5);const ec=1+Math.floor(Math.random()*2);for(let i=0;i<ec;i++)items.push(sh[i]);
+  specials.forEach(s=>items.push(s));order=items;patienceMax=CFG.basePat+5;patienceLeft=patienceMax;
+  const el=document.getElementById('customer');el.textContent=sc.emoji;el.classList.add('big-pop');setTimeout(()=>el.classList.remove('big-pop'),400);
+  displayOrder();startPatience();showOrderThenHide();
+}
+function displayCustomer(){const el=document.getElementById('customer');el.textContent=CUSTOMERS[Math.floor(Math.random()*CUSTOMERS.length)];el.classList.add('big-pop');setTimeout(()=>el.classList.remove('big-pop'),400);}
+function displayOrder(){const sIds=SPECIAL_INGREDIENTS.map(s=>s.id);document.getElementById('order-display').innerHTML=order.map(i=>{const c=sIds.includes(i.id)?'order-item special':'order-item';return`<span class="${c}">${i.emoji} ${i.name}</span>`;}).join('');}
+
+function startPatience(){stopPatience();updatePatienceBar();patienceTimer=setInterval(()=>{patienceLeft-=0.5;updatePatienceBar();if(patienceLeft<=0)customerEscaped();},500);}
+function stopPatience(){if(patienceTimer){clearInterval(patienceTimer);patienceTimer=null;}}
+function updatePatienceBar(){const p=Math.max(0,(patienceLeft/patienceMax)*100),f=document.getElementById('patience-fill');f.style.width=p+'%';f.style.background=p>50?'linear-gradient(90deg,#66bb6a,#a5d6a7)':p>25?'linear-gradient(90deg,#ffa726,#ffcc80)':'linear-gradient(90deg,#ef5350,#ff8a80)';if(!isSpecial){const c=document.getElementById('customer');if(p<=25)c.textContent='😡';else if(p<=50)c.textContent='😤';}}
+function customerEscaped(){stopPatience();if(orderHideTimer)clearTimeout(orderHideTimer);if(orderTimerAnim)cancelAnimationFrame(orderTimerAnim);sfxEscape();combo=0;escapeCount++;const n=document.getElementById('escape-notify');n.classList.add('show');setTimeout(()=>n.classList.remove('show'),1200);const c=document.getElementById('customer');c.textContent='💨';c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),300);showMessage('😢 お客さんが帰っちゃった…');showCombo();setTimeout(()=>{build=[];displayBuild();generateOrder();},1000);}
+
+function addIngredient(ing){if(!timer)return;build.push(ing);displayBuild();sfxAdd();}
+function displayBuild(){const el=document.getElementById('build-display');el.innerHTML=build.map(i=>`<span class="build-item">${i.emoji} ${i.name}</span>`).join('');el.className='';}
+function clearBuild(){if(!timer)return;build=[];displayBuild();showMessage('');sfxClear();}
+
+function serve(){
+  if(!timer)return;if(build.length===0){showMessage('⚠️ まだ何も載せてないよ！');return;}
+  if(matchUnordered(order,build)){
+    stopPatience();if(orderHideTimer)clearTimeout(orderHideTimer);if(orderTimerAnim)cancelAnimationFrame(orderTimerAnim);
+    combo++;if(combo>maxCombo)maxCombo=combo;
+    const bs=isSpecial?200:100,cb=combo>=3?combo*10:0,sp=Math.floor((patienceLeft/patienceMax)*50),earned=bs+cb+sp;
+    score+=earned;served++;if(isSpecial)specialServed++;
+    document.getElementById('score').textContent=score;document.getElementById('served').textContent=served;
+    document.getElementById('build-display').classList.add('correct');combo>=3?sfxCombo():sfxCorrect();
+    let msg=['🎉 完璧！','✨ ナイス！','👏 すばらしい！','🔥 最高！'][Math.floor(Math.random()*4)];
+    if(isSpecial)msg='🌟 スペシャル完成！ +'+bs;if(combo>=3)msg+=` ${combo}コンボ！`;if(sp>=30)msg+=' ⚡早い！';
+    showMessage(msg);showCombo();setTimeout(()=>{build=[];displayBuild();generateOrder();},600);
+  }else{
+    combo=0;missCount++;document.getElementById('build-display').classList.add('wrong');sfxWrong();
+    const oc=countIds(order),bc=countIds(build);
+    const missing=Object.keys(oc).filter(k=>(bc[k]||0)<oc[k]),extra=Object.keys(bc).filter(k=>(oc[k]||0)<bc[k]);
+    let hint='';if(missing.length>0&&extra.length>0)hint='余計な材料があるか、足りない材料があるよ！';
+    else if(missing.length>0)hint='材料が足りないよ！';else if(extra.length>0)hint='余計な材料が入ってるよ！';else hint='注文と違うよ！';
+    showMessage('❌ '+hint);showCombo();if(!orderVisible)revealOrder();
+    setTimeout(()=>{build=[];displayBuild();document.getElementById('build-display').classList.remove('wrong');},600);
+  }
+}
+
+function showMessage(t){const el=document.getElementById('message');el.textContent=t||'\u00A0';if(t){el.style.animation='none';el.offsetHeight;el.style.animation='fadeIn 0.3s';}}
+function showCombo(){document.getElementById('combo').textContent=combo>=2?`🔥 ${combo}コンボ継続中！`:'';}
+
+function updateTimer(){timeLeft--;document.getElementById('timer-fill').style.width=((timeLeft/CFG.gameTime)*100)+'%';if(timeLeft<=20)document.getElementById('timer-fill').style.background='linear-gradient(90deg,#f44336,#ff7043)';if(timeLeft<=10&&timeLeft>0&&timeLeft%2===0)sfxTimeWarn();if(timeLeft<=0)endGame();}
+
+function startGame(){
+  ensureAudio();readConfig();
+  document.getElementById('start-screen').classList.add('hidden');document.getElementById('result-screen').classList.add('hidden');
+  score=0;served=0;combo=0;maxCombo=0;missCount=0;escapeCount=0;specialServed=0;
+  totalCustomers=0;timeLeft=CFG.gameTime;build=[];isSpecial=false;orderVisible=true;
+  document.getElementById('score').textContent='0';document.getElementById('served').textContent='0';
+  document.getElementById('timer-fill').style.width='100%';document.getElementById('timer-fill').style.background='linear-gradient(90deg,#ff7043,#ffca28)';
+  document.getElementById('special-label').innerHTML='&nbsp;';
+  document.getElementById('order-display').style.display='flex';document.getElementById('order-display').classList.remove('fading');
+  document.getElementById('order-hidden-msg').style.display='none';document.getElementById('order-timer-bar').style.display='block';
+  currentIngredients=[...INGREDIENTS];displayBuild();showMessage('');showCombo();initIngredientButtons();generateOrder();
+  if(timer)clearInterval(timer);timer=setInterval(updateTimer,1000);
+}
+
+function getRankInfo(){
+  if(served>=20)return{rank:4,title:'伝説のシャワルマ職人',label:'🏆 伝説のシャワルマ職人'};
+  if(served>=15)return{rank:3,title:'シャワルママスター',label:'🥇 シャワルママスター'};
+  if(served>=10)return{rank:2,title:'一流シェフ',label:'🥈 一流シェフ'};
+  if(served>=5)return{rank:1,title:'なかなかの腕前',label:'🥉 なかなかの腕前'};
+  return{rank:0,title:'見習いシェフ',label:'😇 見習いシェフ'};
+}
+
+function endGame(){
+  clearInterval(timer);timer=null;stopPatience();
+  if(orderHideTimer)clearTimeout(orderHideTimer);if(orderTimerAnim)cancelAnimationFrame(orderTimerAnim);
+  sfxGameOver();
+  const ri=getRankInfo();
+  const rankColors=['#90a4ae','#cd7f32','#9e9e9e','#ffd700','#ff6f00'];
+  const chefArea=document.getElementById('result-chef-area');
+  chefArea.innerHTML=showChefImage(ri.rank)+`<div id="result-rank-label" style="color:${rankColors[ri.rank]}">${ri.label}</div>`;
+  document.getElementById('result-title').textContent=served<5?'もっとがんばろう！':'おつかれさま！';
+  let d=`💰 スコア: <b>${score}</b><br>👤 提供数: <b>${served}</b>人<br>🔥 最大コンボ: <b>${maxCombo}</b><br>❌ ミス: <b>${missCount}</b>回<br>💨 逃した客: <b>${escapeCount}</b>人<br>`;
+  if(specialServed>0)d+=`🌟 スペシャル: <b>${specialServed}</b>品<br>`;
+  document.getElementById('result-stats').innerHTML=d;
+  document.getElementById('result-screen').classList.remove('hidden');
+}
+
+function shareResult(){
+  const ri=getRankInfo();
+  const chefEmojis=['👨‍🍳','👨‍🍳⭐','👨‍🍳⭐⭐','👨‍🍳⭐⭐⭐','👑👨‍🍳⭐⭐⭐'];
+  let t=`🥙 シャワルマ屋さん 結果 🥙\n\n`;
+  t+=`${chefEmojis[ri.rank]}\n`;
+  t+=`【${ri.title}】\n\n`;
+  t+=`💰 ${score}点\n`;
+  t+=`👤 ${served}人に提供\n`;
+  t+=`🔥 最大${maxCombo}コンボ\n`;
+  t+=`❌ ${missCount}ミス\n`;
+  t+=`💨 ${escapeCount}人に逃げられた\n`;
+  if(specialServed>0)t+=`🌟 スペシャル${specialServed}品\n`;
+  t+=`\n君もシャワルマ作ってみよう👇`;
+  window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(t)}`,'_blank');
+}
+
+initIngredientButtons();
+</script>
+</body>
+</html>
