@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🥙 シャワルマ屋さん</title>
+<meta property="og:title" content="🥙 シャワルマ屋さん">
+<meta property="og:description" content="注文を覚えてシャワルマを作ろう！記憶力とスピードのゲーム🧠⏱️">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reko-notes.github.io/shawa.game/">
+<meta property="og:image" content="https://reko-notes.github.io/shawa.game/images/chef-4.png">
+<meta property="og:image:alt" content="伝説のシャワルマ職人">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="🥙 シャワルマ屋さん">
+<meta name="twitter:description" content="注文を覚えてシャワルマを作ろう！記憶力とスピードのゲーム🧠⏱️">
+<meta name="twitter:image" content="https://reko-notes.github.io/shawa.game/images/chef-4.png">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -317,7 +327,6 @@
 </div>
 
 <script>
-// ===== AUDIO =====
 const AudioCtx=window.AudioContext||window.webkitAudioContext;
 let audioCtx=null;
 function ensureAudio(){if(!audioCtx)audioCtx=new AudioCtx();if(audioCtx.state==='suspended')audioCtx.resume();}
@@ -333,14 +342,9 @@ function sfxGameOver(){playTone(520,0.2,'sine',0.1);setTimeout(()=>playTone(490,
 function sfxClear(){playTone(350,0.08,'triangle',0.06);}
 function sfxShuffle(){playTone(500,0.06,'triangle',0.07);setTimeout(()=>playTone(620,0.06,'triangle',0.07),50);setTimeout(()=>playTone(740,0.08,'triangle',0.08),100);}
 function sfxOrderHide(){playTone(800,0.1,'sine',0.05);setTimeout(()=>playTone(600,0.15,'sine',0.04),80);}
-
-// ===== シェフ画像 =====
-// images/chef-0.png 〜 chef-4.png を参照
 function showChefImage(rank){
   return '<img src="images/chef-' + rank + '.png" width="160" alt="シェフ" style="height:auto;border-radius:12px;">';
 }
-
-// ===== DATA =====
 const INGREDIENTS=[
   {id:'pita',emoji:'🫓',name:'ピタ'},{id:'chicken',emoji:'🍗',name:'チキン'},
   {id:'beef',emoji:'🥩',name:'ビーフ'},{id:'lettuce',emoji:'🥬',name:'レタス'},
@@ -359,7 +363,6 @@ const SPECIAL_CUSTOMERS=[
   {emoji:'🎅',desc:'🎄 クリスマス特別注文！'},{emoji:'🥷',desc:'💨 超高速注文！'},
   {emoji:'🧙',desc:'✨ 魔法のシャワルマ！'},
 ];
-
 let CFG={};
 function readConfig(){
   CFG={
@@ -371,7 +374,6 @@ function readConfig(){
     specialPct:parseInt(document.getElementById('cfg-special').value)/100,
   };
 }
-
 let order=[],build=[],score=0,served=0,combo=0,maxCombo=0;
 let missCount=0,escapeCount=0,specialServed=0;
 let timeLeft=0,timer=null;
@@ -379,15 +381,12 @@ let patienceLeft=0,patienceMax=0,patienceTimer=null;
 let isSpecial=false,currentIngredients=[...INGREDIENTS];
 let orderVisible=true,orderHideTimer=null,orderTimerAnim=null;
 let totalCustomers=0,buttonLayout=[...INGREDIENTS];
-
 function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function countIds(items){const m={};items.forEach(i=>{m[i.id]=(m[i.id]||0)+1;});return m;}
 function matchUnordered(a,b){const ca=countIds(a),cb=countIds(b);const ka=Object.keys(ca),kb=Object.keys(cb);if(ka.length!==kb.length)return false;return ka.every(k=>ca[k]===cb[k]);}
-
 function renderButtons(anim=false){const g=document.getElementById('ingredients-grid');g.innerHTML='';buttonLayout.forEach(ing=>{const b=document.createElement('button');b.className='ingredient-btn'+(anim?' shuffle-pop':'');b.innerHTML=`<span class="emoji">${ing.emoji}</span><span>${ing.name}</span>`;b.onclick=()=>addIngredient(ing);g.appendChild(b);});}
 function initIngredientButtons(){buttonLayout=[...currentIngredients];renderButtons();}
 function doShuffle(){buttonLayout=shuffleArray(currentIngredients);renderButtons(true);sfxShuffle();const n=document.getElementById('shuffle-notify');n.classList.add('show');setTimeout(()=>n.classList.remove('show'),900);}
-
 function getOrderShowTime(){return Math.max(CFG.orderShowMin,CFG.orderShowBase-served*0.5);}
 function showOrderThenHide(){
   orderVisible=true;const oEl=document.getElementById('order-display'),hMsg=document.getElementById('order-hidden-msg');
@@ -409,7 +408,6 @@ function revealOrder(){
   orderTimerAnim=requestAnimationFrame(anim);
   orderHideTimer=setTimeout(()=>{oEl.classList.add('fading');setTimeout(()=>{oEl.style.display='none';hMsg.style.display='block';tBar.style.display='none';orderVisible=false;},400);},rt*1000);
 }
-
 function generateOrder(){totalCustomers++;isSpecial=served>0&&Math.random()<CFG.specialPct;isSpecial?generateSpecialOrder():generateNormalOrder();}
 function generateNormalOrder(){
   document.getElementById('special-label').innerHTML='&nbsp;';currentIngredients=[...INGREDIENTS];
@@ -433,16 +431,13 @@ function generateSpecialOrder(){
 }
 function displayCustomer(){const el=document.getElementById('customer');el.textContent=CUSTOMERS[Math.floor(Math.random()*CUSTOMERS.length)];el.classList.add('big-pop');setTimeout(()=>el.classList.remove('big-pop'),400);}
 function displayOrder(){const sIds=SPECIAL_INGREDIENTS.map(s=>s.id);document.getElementById('order-display').innerHTML=order.map(i=>{const c=sIds.includes(i.id)?'order-item special':'order-item';return`<span class="${c}">${i.emoji} ${i.name}</span>`;}).join('');}
-
 function startPatience(){stopPatience();updatePatienceBar();patienceTimer=setInterval(()=>{patienceLeft-=0.5;updatePatienceBar();if(patienceLeft<=0)customerEscaped();},500);}
 function stopPatience(){if(patienceTimer){clearInterval(patienceTimer);patienceTimer=null;}}
 function updatePatienceBar(){const p=Math.max(0,(patienceLeft/patienceMax)*100),f=document.getElementById('patience-fill');f.style.width=p+'%';f.style.background=p>50?'linear-gradient(90deg,#66bb6a,#a5d6a7)':p>25?'linear-gradient(90deg,#ffa726,#ffcc80)':'linear-gradient(90deg,#ef5350,#ff8a80)';if(!isSpecial){const c=document.getElementById('customer');if(p<=25)c.textContent='😡';else if(p<=50)c.textContent='😤';}}
 function customerEscaped(){stopPatience();if(orderHideTimer)clearTimeout(orderHideTimer);if(orderTimerAnim)cancelAnimationFrame(orderTimerAnim);sfxEscape();combo=0;escapeCount++;const n=document.getElementById('escape-notify');n.classList.add('show');setTimeout(()=>n.classList.remove('show'),1200);const c=document.getElementById('customer');c.textContent='💨';c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),300);showMessage('😢 お客さんが帰っちゃった…');showCombo();setTimeout(()=>{build=[];displayBuild();generateOrder();},1000);}
-
 function addIngredient(ing){if(!timer)return;build.push(ing);displayBuild();sfxAdd();}
 function displayBuild(){const el=document.getElementById('build-display');el.innerHTML=build.map(i=>`<span class="build-item">${i.emoji} ${i.name}</span>`).join('');el.className='';}
 function clearBuild(){if(!timer)return;build=[];displayBuild();showMessage('');sfxClear();}
-
 function serve(){
   if(!timer)return;if(build.length===0){showMessage('⚠️ まだ何も載せてないよ！');return;}
   if(matchUnordered(order,build)){
@@ -465,12 +460,9 @@ function serve(){
     setTimeout(()=>{build=[];displayBuild();document.getElementById('build-display').classList.remove('wrong');},600);
   }
 }
-
 function showMessage(t){const el=document.getElementById('message');el.textContent=t||'\u00A0';if(t){el.style.animation='none';el.offsetHeight;el.style.animation='fadeIn 0.3s';}}
 function showCombo(){document.getElementById('combo').textContent=combo>=2?`🔥 ${combo}コンボ継続中！`:'';}
-
 function updateTimer(){timeLeft--;document.getElementById('timer-fill').style.width=((timeLeft/CFG.gameTime)*100)+'%';if(timeLeft<=20)document.getElementById('timer-fill').style.background='linear-gradient(90deg,#f44336,#ff7043)';if(timeLeft<=10&&timeLeft>0&&timeLeft%2===0)sfxTimeWarn();if(timeLeft<=0)endGame();}
-
 function startGame(){
   ensureAudio();readConfig();
   document.getElementById('start-screen').classList.add('hidden');document.getElementById('result-screen').classList.add('hidden');
@@ -484,7 +476,6 @@ function startGame(){
   currentIngredients=[...INGREDIENTS];displayBuild();showMessage('');showCombo();initIngredientButtons();generateOrder();
   if(timer)clearInterval(timer);timer=setInterval(updateTimer,1000);
 }
-
 function getRankInfo(){
   if(served>=20)return{rank:4,title:'伝説のシャワルマ職人',label:'🏆 伝説のシャワルマ職人'};
   if(served>=15)return{rank:3,title:'シャワルママスター',label:'🥇 シャワルママスター'};
@@ -492,7 +483,6 @@ function getRankInfo(){
   if(served>=5)return{rank:1,title:'なかなかの腕前',label:'🥉 なかなかの腕前'};
   return{rank:0,title:'見習いシェフ',label:'😇 見習いシェフ'};
 }
-
 function endGame(){
   clearInterval(timer);timer=null;stopPatience();
   if(orderHideTimer)clearTimeout(orderHideTimer);if(orderTimerAnim)cancelAnimationFrame(orderTimerAnim);
@@ -507,7 +497,6 @@ function endGame(){
   document.getElementById('result-stats').innerHTML=d;
   document.getElementById('result-screen').classList.remove('hidden');
 }
-
 function shareResult(){
   const ri=getRankInfo();
   const chefEmojis=['👨‍🍳','👨‍🍳⭐','👨‍🍳⭐⭐','👨‍🍳⭐⭐⭐','👑👨‍🍳⭐⭐⭐'];
@@ -523,7 +512,6 @@ function shareResult(){
   t+=`\n君もシャワルマ作ってみよう👇`;
   window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(t)}`,'_blank');
 }
-
 initIngredientButtons();
 </script>
 </body>
